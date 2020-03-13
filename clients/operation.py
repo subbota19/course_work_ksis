@@ -77,6 +77,8 @@ class ClientOperation:
             file = open('{}/{}'.format(kept_path, file_name), 'w')
         except FileNotFoundError:
             print('please input correct path')
+        except IsADirectoryError:
+            print('please input correct path')
         server_answer = self.sock.socket_recv()
         if server_answer == 'ok':
             while True:
@@ -87,7 +89,7 @@ class ClientOperation:
                     break
                 finally:
                     file.write(data)
-        file.close()
+            file.close()
         print(server_answer)
 
     @staticmethod

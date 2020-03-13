@@ -5,7 +5,7 @@ class ClientSocket:
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    def socket_connect(self, tuple_address_port=('127.0.0.1', 8008)):
+    def socket_connect(self, tuple_address_port=('127.0.0.1', 8001)):
         self.sock.connect(tuple_address_port)
         self.sock.settimeout(5)
 

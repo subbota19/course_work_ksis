@@ -101,15 +101,14 @@ class ServerOperation:
         if not self.cache_obj.cache_get(active_user):
             client.send(self.encode_message('please authorise to submit your command'))
             return None
-        else:
-            client.send(self.encode_message('ok'))
         try:
             file = open('/home/zhenya/PycharmProjects/Pyramid/ksis/files/{}/{}'.format(active_user, file_name, 'r'))
         except FileNotFoundError:
             client.send(self.encode_message("file with this name doesn't exist"))
-        except SyntaxError:
+        except (SyntaxError, IsADirectoryError):
             client.send(self.encode_message('please make correct you request'))
         else:
+            client.send(self.encode_message('ok'))
             while True:
                 data = file.read(BUF_SIZE)
                 client.send(self.encode_message(data))
@@ -153,7 +152,12 @@ class ServerOperation:
 
     @staticmethod
     def re_find_del_file_name(string):
-        return re.findall(r'file_name:([\S]+)', string)[0]
+        try:
+            response = re.findall(r'file_name:([\S]+)', string)[0]
+        except IndexError:
+            response = ''
+        finally:
+            return response
 
     @staticmethod
     def re_find_file_size(string):
