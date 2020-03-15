@@ -9,7 +9,7 @@ def main():
         while True:
             input_info = input('>*>')
             try:
-                result = operation_obj.dict_with_operation[input_info]()
+                operation_obj.dict_with_operation[input_info]()
             except KeyError:
                 print('incorrect operation')
 
