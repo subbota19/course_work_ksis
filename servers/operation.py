@@ -1,9 +1,11 @@
 from servers.cache import Cache
 from models.model import User, db_connection
-
+from servers.create_yaml_file import create_file, check_client
 import re, os, socket
 
 BUF_SIZE = 4096
+
+PATH = '/home/zhenya/PycharmProjects/Pyramid/ksis/files'
 
 INSTRUCTION = """
     hi and welcome to our program file sharing.
@@ -32,14 +34,14 @@ class ServerOperation:
         client.send(self.encode_message(INSTRUCTION))
 
     def operation_si(self, client, full_command_name):
-        session = db_connection.session()
         password = self.re_find_password(full_command_name)
         username = self.re_find_username(full_command_name)
 
         if not password or not username:
             client.send(self.encode_message('please input correct username and password'))
             return None
-        if session.query(User).filter(User.username == username, User.password == password).first():
+
+        if check_client(username, password, PATH):
             self.cache_obj.cache_set(username, True)
             client.send(self.encode_message('successful authentication'))
             return None
@@ -49,18 +51,21 @@ class ServerOperation:
         session = db_connection.session()
         password = self.re_find_password(full_command_name)
         username = self.re_find_username(full_command_name)
+
         if not password or not username:
             client.send(self.encode_message('please input correct username and password'))
             return None
         if session.query(User).filter(User.username == username).first():
             client.send(self.encode_message('user with this username {} already exist'.format(username)))
             return None
+
         session.add(User(username=username, password=password))
         session.commit()
 
         self.cache_obj.cache_set(username, True)
 
-        os.mkdir('/home/zhenya/PycharmProjects/Pyramid/ksis/files/{}'.format(username))
+        os.mkdir('{}/{}'.format(PATH, username))
+        create_file(username, password, client, path=PATH)
 
         client.send(self.encode_message('success registration'))
 
@@ -72,7 +77,7 @@ class ServerOperation:
         else:
             client.send(self.encode_message('please authorise to submit your command'))
             return None
-        file = open('/home/zhenya/PycharmProjects/Pyramid/ksis/files/{}/{}'.format(active_user, file_name), 'w')
+        file = open('{}/{}/{}'.format(PATH, active_user, file_name), 'w')
         while True:
             data = ''
             try:
@@ -90,7 +95,7 @@ class ServerOperation:
             client.send(self.encode_message('please authorise to submit your command'))
             return None
         try:
-            os.remove('/home/zhenya/PycharmProjects/Pyramid/ksis/files/{}/{}'.format(active_user, file_name))
+            os.remove('{}/{}/{}'.format(PATH, active_user, file_name))
             client.send(self.encode_message('ok'))
         except FileNotFoundError:
             client.send(self.encode_message("file with this name doesn't exist"))
@@ -102,7 +107,7 @@ class ServerOperation:
             client.send(self.encode_message('please authorise to submit your command'))
             return None
         try:
-            file = open('/home/zhenya/PycharmProjects/Pyramid/ksis/files/{}/{}'.format(active_user, file_name, 'r'))
+            file = open('{}/{}/{}'.format(PATH, active_user, file_name, 'r'))
         except FileNotFoundError:
             client.send(self.encode_message("file with this name doesn't exist"))
         except (SyntaxError, IsADirectoryError):
@@ -122,7 +127,7 @@ class ServerOperation:
         if not self.cache_obj.cache_get(active_user):
             client.send(self.encode_message('please authorise to submit your command'))
             return None
-        dir_location = os.listdir('/home/zhenya/PycharmProjects/Pyramid/ksis/files/{}'.format(active_user))
+        dir_location = os.listdir('{}/{}'.format(PATH, active_user))
         if not dir_location:
             client.send(self.encode_message("you haven't active files in our program"))
             return None
